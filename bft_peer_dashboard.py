@@ -1,7 +1,7 @@
 """BFT fixed-route peer dashboard.
 
-Replace GITHUB_EXCEL_URL with the workbook's raw GitHub URL, or set the
-PEER_DATA_URL environment variable in the hosting service.
+The workbook loads from the project's GitHub repository. Set PEER_DATA_URL in
+the hosting service only if you want to override the default address.
 """
 
 from io import BytesIO
@@ -19,7 +19,7 @@ FIXED_ROUTE_MODES = ["MB", "CB", "RB"]
 METRIC_SHEETS = ["UPT", "VRM", "VRH", "VOMS"]
 GITHUB_EXCEL_URL = os.getenv(
     "PEER_DATA_URL",
-    "https://raw.githubusercontent.com/YOUR-USER/YOUR-REPO/main/data/Peer%20Comparison%283%29.xlsx",
+    "https://raw.githubusercontent.com/sepidazizi97/Peer_Agencies_Comparison/main/Peer%20Comparison.xlsx",
 )
 METRIC_LABELS = {
     "UPT": "Unlinked Passenger Trips",
@@ -274,7 +274,7 @@ def performance_page(panel, mix):
     )
     c1, c2 = st.columns([1, 1.6])
     with c1:
-        period = st.selectbox("Comparison period", ["2026 Q1", "2025", "2024", "2023", "Custom"])
+        period = st.selectbox("Comparison period", ["2026 Q1", "2025", "2024", "2023"])
     with c2:
         metric = st.selectbox(
             "Primary metric", list(METRIC_LABELS),
@@ -286,19 +286,7 @@ def performance_page(panel, mix):
         "2024": ("2024-01-01", "2024-12-01"),
         "2023": ("2023-01-01", "2023-12-01"),
     }
-    if period == "Custom":
-        values = st.date_input(
-            "Custom month range",
-            value=(pd.Timestamp("2025-01-01").date(), panel["Date"].max().date()),
-            min_value=panel["Date"].min().date(), max_value=panel["Date"].max().date(),
-        )
-        if len(values) != 2:
-            st.warning("Select both a start and end date.")
-            st.stop()
-        start = pd.Timestamp(values[0]).to_period("M").to_timestamp()
-        end = pd.Timestamp(values[1]).to_period("M").to_timestamp()
-    else:
-        start, end = map(pd.Timestamp, periods[period])
+    start, end = map(pd.Timestamp, periods[period])
 
     summary = period_summary(panel, start, end).merge(mix, on="Agency", how="left")
     summary = summary.loc[summary[metric].notna()].copy()
@@ -403,16 +391,6 @@ def main():
     st.sidebar.title("BFT Peer Comparison")
     page = st.sidebar.radio("Page", ["Agency Overview", "Performance Dashboard"])
     st.sidebar.caption("Data refreshes from GitHub every hour.")
-    if "YOUR-USER" in GITHUB_EXCEL_URL or "YOUR-REPO" in GITHUB_EXCEL_URL:
-        st.error(
-            "Replace GITHUB_EXCEL_URL near the top of this script with the raw GitHub "
-            "URL for Peer Comparison(3).xlsx, or set PEER_DATA_URL."
-        )
-        st.code(
-            'GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/USER/REPO/'
-            'main/data/Peer%20Comparison%283%29.xlsx"'
-        )
-        st.stop()
     try:
         sheets = read_source(GITHUB_EXCEL_URL)
         panel, mix = build_panel(sheets)
