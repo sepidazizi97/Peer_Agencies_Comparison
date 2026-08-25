@@ -52,9 +52,16 @@ st.markdown(
     [data-testid="stMetric"] {background:#F4F8FB;border:1px solid #D7E3EC;
       border-radius:10px;padding:12px 14px}
     [data-testid="stMetricLabel"],h1,h2,h3 {color:#003B71}
-    .note {color:#52697A;font-size:.88rem}
-    .profile {background:#F8FAFC;border-left:5px solid #FFC72C;border-radius:8px;
-      padding:.8rem 1rem;margin:.35rem 0 1rem}
+    .note {color:#52697A;font-size:.92rem;margin-bottom:1rem}
+    .overview-hero {background:linear-gradient(120deg,#003B71 0%,#005F9E 70%,#026873 100%);
+      border-radius:16px;padding:1.6rem 1.8rem;margin-bottom:1.25rem;color:white;
+      box-shadow:0 8px 22px rgba(0,59,113,.16)}
+    .overview-hero h1 {color:white;margin:0 0 .35rem 0;font-size:2.25rem}
+    .overview-hero p {margin:0;color:#E8F3FA;font-size:1rem}
+    .eyebrow {color:#FFC72C;font-size:.78rem;font-weight:700;letter-spacing:.12em;
+      text-transform:uppercase;margin-bottom:.4rem}
+    .section-label {font-size:1.05rem;font-weight:700;color:#003B71;margin-top:1.2rem;
+      margin-bottom:.25rem}
     </style>""",
     unsafe_allow_html=True,
 )
@@ -207,39 +214,43 @@ def metric_format(metric, value):
 
 
 def overview_page(profiles):
-    st.title("BFT Fixed-Route Peer Agencies")
     st.markdown(
-        "<div class='note'>Agency context from the workbook's latest closed NTD report. "
-        "Monthly performance is on the next page.</div>", unsafe_allow_html=True,
+        "<div class='overview-hero'><div class='eyebrow'>BFT Peer Benchmarking</div>"
+        "<h1>Agency Overview</h1><p>Explore the communities, service areas, and "
+        "operating scale of Ben Franklin Transit and its fixed-route peers.</p></div>",
+        unsafe_allow_html=True,
     )
     options = profiles.assign(IsPeer=profiles["Agency"].ne(BFT_NAME)).sort_values(
         ["IsPeer", "Agency"]
     )["Agency"].tolist()
     selected = st.selectbox(
-        "Agency profile", options, format_func=lambda x: SHORT_NAMES.get(x, x)
+        "Select an agency", options, format_func=lambda x: SHORT_NAMES.get(x, x)
     )
     row = profiles.loc[profiles["Agency"].eq(selected)].iloc[0]
     st.markdown(
-        f"<div class='profile'><b>{row['Agency']}</b><br>"
-        f"{str(row['HQ City']).title()}, {row['HQ State']} • {row['Organization Type']}<br>"
-        f"Urbanized area: {row['UZA Name']} • Fixed-route service: "
-        f"{row['Fixed-Route Service']}</div>", unsafe_allow_html=True,
+        "<div class='section-label'>Community &amp; Service Area</div>",
+        unsafe_allow_html=True,
     )
-    cols = st.columns(5)
+    cols = st.columns(4)
     cols[0].metric("Service population", f"{row['Service Area Population']:,.0f}")
     cols[1].metric("Service area (sq. mi.)", f"{row['Service Area SQ Miles']:,.0f}")
     cols[2].metric("Population density", f"{row['Service Area Density']:,.0f}/sq. mi.")
     cols[3].metric("UZA population", f"{row['UZA Population']:,.0f}")
-    cols[4].metric("Latest closed report", f"FY {row['Last Closed Report Year']:.0f}")
 
-    st.subheader("Latest Closed-Year Context")
+    st.markdown(
+        "<div class='section-label'>Latest Closed-Year Operating Context</div>",
+        unsafe_allow_html=True,
+    )
     cols = st.columns(4)
     cols[0].metric("Fixed-route trips", f"{row['FY_UPT']:,.0f}")
     cols[1].metric("Passenger miles", f"{row['FY_Passenger_Miles']:,.0f}")
     cols[2].metric("Operating expense", f"${row['FY_Operating_Expenses']:,.0f}")
     cols[3].metric("Cost per trip", f"${row['FY Cost per Trip']:,.2f}")
 
-    st.subheader("All Peer Profiles")
+    st.markdown(
+        "<div class='section-label'>Peer Agency Reference</div>",
+        unsafe_allow_html=True,
+    )
     table = profiles[[
         "Short Agency", "HQ State", "UZA Name", "Service Area Population",
         "Service Area SQ Miles", "Service Area Density", "UZA Population",
@@ -257,11 +268,6 @@ def overview_page(profiles):
             "Report Year": "{:.0f}",
         }, na_rep="—"),
         use_container_width=True, hide_index=True, height=455,
-    )
-    st.caption(
-        "An agency can have several source rows because NTD reports each Mode/Type "
-        "of Service combination separately. This dashboard combines active MB, CB "
-        "and RB rows, including DO and PT, into one agency result."
     )
 
 
@@ -380,10 +386,6 @@ def performance_page(panel, mix):
             "UPT/VRM": "{:,.2f}", "UPT/Avg. VOMS": "{:,.0f}",
         }, na_rep="—"),
         use_container_width=True, hide_index=True, height=455,
-    )
-    st.caption(
-        "Method: active MB, CB and RB records are combined at the agency level. "
-        "DO and PT are summed before ratios are calculated; VOMS is averaged across months."
     )
 
 
